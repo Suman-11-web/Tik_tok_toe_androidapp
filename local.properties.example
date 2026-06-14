@@ -1,0 +1,12 @@
+# This is a template for local.properties.
+# For Android Studio to build the project locally, set the path to your Android SDK:
+# On Windows, it usually looks like:
+# sdk.dir=C\:\\Users\\YourUsername\\AppData\\Local\\Android\\Sdk
+#
+# On macOS, it usually looks like:
+# sdk.dir=/Users/YourUsername/Library/Android/sdk
+#
+# On Linux, it usually looks like:
+# sdk.dir=/home/YourUsername/Android/Sdk
+
+sdk.dir=PLACEHOLDER_FOR_YOUR_ANDROID_SDK_PATH

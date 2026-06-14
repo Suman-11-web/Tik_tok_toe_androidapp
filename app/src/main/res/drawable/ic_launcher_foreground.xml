@@ -1,0 +1,47 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Tic-Tac-Toe Board Grid Lines in subtle cyan/magenta shadow -->
+    <path
+        android:pathData="M44,28 V80"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeColor="#5500F2FE" />
+    <path
+        android:pathData="M64,28 V80"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeColor="#55FE0979" />
+    <path
+        android:pathData="M28,44 H80"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeColor="#55FE0979" />
+    <path
+        android:pathData="M28,64 H80"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeColor="#5500F2FE" />
+
+    <!-- Cyan Neon "X" at Top Left (center 36, 36) -->
+    <path
+        android:pathData="M31,31 L41,41 M41,31 L31,41"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:strokeColor="#00F2FE" />
+
+    <!-- Magenta Neon "O" at Bottom Right (center 72, 72) -->
+    <path
+        android:pathData="M72,72 M66,72 A6,6 0 1,1 78,72 A6,6 0 1,1 66,72"
+        android:strokeWidth="5.5"
+        android:strokeColor="#FE0979" />
+
+    <!-- Yellow Accent dot at Center (54, 54) -->
+    <path
+        android:pathData="M54,54 M51,54 A3,3 0 1,1 57,54 A3,3 0 1,1 51,54"
+        android:strokeWidth="1"
+        android:fillColor="#FFFFE600" />
+</vector>
