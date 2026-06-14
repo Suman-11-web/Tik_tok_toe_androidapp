@@ -50,3 +50,11 @@ This application was developed as a native Android project and utilizes a fully 
 ---
 ## 👨‍💻 Developer
 **Made by Suman** *Ultimate Synchronized Game Engine*
+
+
+<div align="center">
+  <a href="https://github.com/Suman-11-web/Tik_tok_toe_androidapp/releases/latest">
+    <img src="https://img.shields.io/badge/Download_APK-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" />
+  </a>
+</div>
+
