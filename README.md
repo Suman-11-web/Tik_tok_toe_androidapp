@@ -23,13 +23,15 @@ TikTok Toe is a modern, neon-infused reimagining of the classic Tic-Tac-Toe game
 | Splash Screen | Main Menu | Multiplayer Setup |
 ## 📸 Screenshots
 
+## 📸 Screenshots
+
 | Splash Screen | Main Menu | Multiplayer Setup |
 | :--- | :--- | :--- |
-| ![Splash](screenshot/1000067992.png) | ![Menu](screenshot/1000067993.png) | ![Setup](screenshot/1000067994.png) |
+| ![Splash](screenshot/entry1.png) | ![Home](screenshot/home2.png) | ![Setup](screenshot/menu3.png) |
 
 | Gameplay Board | Profile & Stats |
 | :--- | :--- |
-| ![Gameplay](screenshot/1000067995.png) | ![Stats](screenshot/1000067996.png) |
+| ![Gameplay](screenshot/play4.png) | ![Stats](screenshot/profile5.png) |
 
 ---
 ## 🚀 How to Install & Play (Android)
