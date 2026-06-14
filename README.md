@@ -1,21 +1,47 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 🕹️ TikTok Toe - Mini Multiplayer Toy
+**Presented by Suman Epic Labs**
+![App Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Android-brightgreen.svg)
+![Build](https://img.shields.io/badge/Build-GitHub_Actions-success.svg)
+TikTok Toe is a modern, neon-infused reimagining of the classic Tic-Tac-Toe game. Built with an "Ultimate Synchronized Game Engine," it features a stunning cyberpunk-inspired dark mode UI, real-time multiplayer lobbies, and an unbeatable AI opponent.
+---
+## ✨ Epic Features
+### 🎮 Three Distinct Game Modes
+* **🌐 Online Multiplayer Match:** Connect with friends globally. Generate a custom 6-digit room code, share it, and play in real-time with live sync status.
+* **🤖 Play vs Smart Bot:** Test your skills against a highly intelligent AI powered by the Minimax algorithm. 
+* **🤝 Pass & Play Locally:** The classic dual-play offline experience for when you are sitting right next to your friend.
+### 🎨 Next-Level UI/UX
+* **Neon Dark Theme:** Gorgeous glowing aesthetics, fluid enter animations, and a sleek modern glass/neon hybrid interface perfectly optimized for mobile screens.
+* **In-Game Reactions:** Express yourself during the match with a built-in live emoji reaction dock (😂, 🔥, 😭, 😮, 💖).
+### 📊 Player Profiles & Stats
+* **Custom Nicknames:** Personalize your display name.
+* **Lifetime Tracking:** Automatically records your Wins, Losses, Draws, and tracks your Active Winning Streak across sessions. 
+---
+## 📸 Screenshots
+*(Add your screenshots here by dragging and dropping them into the GitHub editor!)*
 
-# Run and deploy your AI Studio app
+| Splash Screen | Main Menu | Multiplayer Setup |
+| :--- | :--- | :--- |
+| ![Splash](link_to_image_1) | ![Menu](link_to_image_2) | ![Setup](link_to_image_3) |
 
-This contains everything you need to run your app locally.
+| Gameplay Board | Profile & Stats |
+| :--- | :--- |
+| ![Gameplay](link_to_image_4) | ![Stats](link_to_image_5) |
 
-View your app in AI Studio: https://ai.studio/apps/cecb93d3-e892-4c96-957d-8001624586fa
-
-## Run Locally
-
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
-
-
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+---
+## 🚀 How to Install & Play (Android)
+You don't need to compile the code yourself to play! 
+1. Navigate to the **[Releases](#)** or **Actions** tab of this repository.
+2. Download the latest `TicTacToe-APK.zip` file.
+3. Extract the `.zip` file on your Android device.
+4. Tap the `app-debug.apk` file to install it. *(Note: You may need to enable "Install from Unknown Sources" in your Android settings).*
+5. Launch **TikTok Toe** and start playing!
+---
+## 🛠️ Technical Architecture & Build Process
+This application was developed as a native Android project and utilizes a fully automated cloud-build pipeline.
+* **Build System:** Gradle (Version 9.5.1)
+* **CI/CD Pipeline:** Fully automated via **GitHub Actions**. Every push to the main branch triggers a cloud server (Ubuntu) to set up Java 17, provision the Android SDK, automatically generate debug keystores, and compile a fresh `.apk` artifact ready for download.
+* **AI Integration:** Single-player mode features a programmatic Minimax decision-making algorithm to ensure competitive gameplay.
+---
+## 👨‍💻 Developer
+**Made by Suman** *Ultimate Synchronized Game Engine*
