@@ -197,7 +197,7 @@ fun MenuScreen(viewModel: GameViewModel) {
             Box(contentAlignment = Alignment.Center) {
                 // Cyber Offset Layer
                 Text(
-                    text = "TIKTOK TOE",
+                    text = "NEON GRID",
                     fontSize = 46.sp,
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace,
@@ -206,7 +206,7 @@ fun MenuScreen(viewModel: GameViewModel) {
                     modifier = Modifier.offset(x = 2.dp, y = 2.dp)
                 )
                 Text(
-                    text = "TIKTOK TOE",
+                    text = "NEON GRID",
                     fontSize = 46.sp,
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace,

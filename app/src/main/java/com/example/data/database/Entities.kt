@@ -17,7 +17,7 @@ data class MatchRecord(
 @Entity(tableName = "profile_stats")
 data class ProfileStats(
     @PrimaryKey val id: String = "primary_user_profile",
-    val username: String = "TikTokPlayer",
+    val username: String = "NeonPlayer",
     val wins: Int = 0,
     val losses: Int = 0,
     val draws: Int = 0,

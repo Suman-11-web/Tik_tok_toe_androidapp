@@ -1,5 +1,5 @@
 {
-  "name": "TikTok Toe",
+  "name": "Neon Grid",
   "description": "A stylish, real-time multiplayer Tic-Tac-Toe toy game with dynamic room matchmaking, live sync, haptic audio and animations.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
