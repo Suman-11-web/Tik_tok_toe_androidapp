@@ -163,10 +163,7 @@ gradle :app:testDebugUnitTest
 ```
 
 ---
+# 👨‍💻 Author
+# Suman M
+⭐ If you enjoyed this project, consider giving the repository a star on GitHub!
 
-## 📜 License & Acknowledgments
-- **Design Language**: Crafted strictly under **Material Design 3 (M3)** rules.
-- **Procedural Soundwaves**: Derived from classical acoustics to achieve retro synthesizer vibes without native external sound players.
-- **Branding**: Renamed and fully customized from TikTok Toe to **Neon Grid**, standardizing high contrast modern views.
-
-Licensed under the [MIT License](LICENSE) (or use it freely for educational development!). Keep on grids! 🌌
