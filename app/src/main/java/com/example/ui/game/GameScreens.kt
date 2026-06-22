@@ -11,6 +11,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -67,6 +69,7 @@ val DarkMeshBrush = Brush.verticalGradient(
 @Composable
 fun TikTokToeApp(viewModel: GameViewModel) {
     val appState by viewModel.appState.collectAsState()
+    val stats by viewModel.profileStats.collectAsState()
     var showSplash by remember { mutableStateOf(true) }
 
     Surface(
@@ -79,6 +82,8 @@ fun TikTokToeApp(viewModel: GameViewModel) {
 
             if (showSplash) {
                 SumanEpicSplash(onFinished = { showSplash = false })
+            } else if (stats != null && !stats!!.hasCompletedOnboarding) {
+                CyberOnboardingScreen(viewModel = viewModel)
             } else {
                 when (appState) {
                     AppState.MENU -> MenuScreen(viewModel)
@@ -133,6 +138,10 @@ fun PulseAmbientBackground() {
 @Composable
 fun MenuScreen(viewModel: GameViewModel) {
     val stats by viewModel.profileStats.collectAsState()
+    val activeTheme = stats?.preferredTheme ?: "CYAN"
+    val themeColors = getThemeColors(activeTheme)
+    val appPrimary = themeColors.first
+    val appSecondary = themeColors.second
 
     Column(
         modifier = Modifier
@@ -158,12 +167,12 @@ fun MenuScreen(viewModel: GameViewModel) {
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = "Profile",
-                    tint = NeonCyan,
+                    tint = appPrimary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = stats.username,
+                    text = stats?.username ?: "Runner",
                     color = PureWhite,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
@@ -176,13 +185,13 @@ fun MenuScreen(viewModel: GameViewModel) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = "Wins",
-                    tint = NeonYellow,
+                    tint = appSecondary,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "${stats.wins} W",
-                    color = NeonYellow,
+                    text = "LVL ${stats?.level ?: 1}",
+                    color = appSecondary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Black
                 )
@@ -192,7 +201,7 @@ fun MenuScreen(viewModel: GameViewModel) {
         // Title Header with Glowing Layered Shadow
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(vertical = 12.dp)
+            modifier = Modifier.padding(vertical = 8.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 // Cyber Offset Layer
@@ -202,7 +211,7 @@ fun MenuScreen(viewModel: GameViewModel) {
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = 2.sp,
-                    color = NeonMagenta,
+                    color = appSecondary,
                     modifier = Modifier.offset(x = 2.dp, y = 2.dp)
                 )
                 Text(
@@ -211,23 +220,90 @@ fun MenuScreen(viewModel: GameViewModel) {
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = 2.sp,
-                    color = NeonCyan,
+                    color = appPrimary,
                     style = TextStyle(
                         shadow = Shadow(
-                            color = NeonCyan,
+                            color = appPrimary,
                             blurRadius = 15f
                         )
                     )
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "⚡ MINI MULTIPLAYER TOY ⚡",
-                fontSize = 12.sp,
+                text = "⚡ ULTIMATE NEON CHRONICLES ⚡",
+                fontSize = 11.sp,
                 color = MutedSlate,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp
             )
+        }
+
+        // GRID SIZE SYSTEM SELECTOR
+        val activeSize by viewModel.gridSize.collectAsState()
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)
+        ) {
+            Text(
+                text = "⚡ ARENA GRID SIZE SELECTOR",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = appPrimary,
+                letterSpacing = 1.5.sp
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                listOf(3, 4, 6).forEach { size ->
+                    val active = activeSize == size
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("grid_selector_$size")
+                            .clickable { viewModel.updateGridSize(size) },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (active) appPrimary.copy(alpha = 0.2f) else SlateCard
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            if (active) appPrimary else MutedSlate.copy(alpha = 0.15f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "${size}x${size}",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Black,
+                                color = if (active) appPrimary else PureWhite,
+                                style = TextStyle(
+                                    shadow = Shadow(
+                                        color = if (active) appPrimary else Color.Transparent,
+                                        blurRadius = if (active) 8f else 0f
+                                    )
+                                )
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = when (size) {
+                                    3 -> "3 in Row"
+                                    4 -> "4 in Row"
+                                    else -> "Tactical 4"
+                                },
+                                fontSize = 10.sp,
+                                color = if (active) PureWhite else MutedSlate,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         // Action Menu Buttons
@@ -241,16 +317,16 @@ fun MenuScreen(viewModel: GameViewModel) {
                 text = "Online Multiplayer Match",
                 subtext = "Sync & play logs via custom room codes",
                 icon = Icons.Default.Share,
-                glowColor = NeonCyan,
+                glowColor = appPrimary,
                 testTag = "btn_online_mult",
                 onClick = { viewModel.startOnlineMatchSetup() }
             )
 
             MenuButton(
                 text = "Play vs Smart Bot",
-                subtext = "Test your skills against smart Minimax AI",
+                subtext = "Test your skills against smart heuristic AI",
                 icon = Icons.Default.PlayArrow,
-                glowColor = NeonMagenta,
+                glowColor = appSecondary,
                 testTag = "btn_play_ai",
                 onClick = { viewModel.selectOfflineMode(GameMode.VS_AI) }
             )
@@ -269,7 +345,7 @@ fun MenuScreen(viewModel: GameViewModel) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp),
+                .padding(top = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             IconButtonWithText(
@@ -973,6 +1049,12 @@ fun GamePlayScreen(viewModel: GameViewModel) {
             }
 
             // Tic Tac Toe Game Grid Board
+            val gridSize by viewModel.gridSize.collectAsState()
+            val activeTheme = stats?.preferredTheme ?: "CYAN"
+            val themeColors = getThemeColors(activeTheme)
+            val appPrimary = themeColors.first
+            val appSecondary = themeColors.second
+
             Box(
                 modifier = Modifier
                     .sizeIn(maxWidth = 340.dp, maxHeight = 340.dp)
@@ -984,22 +1066,23 @@ fun GamePlayScreen(viewModel: GameViewModel) {
             ) {
                 // Game cells
                 Column(modifier = Modifier.fillMaxSize()) {
-                    for (row in 0..2) {
+                    for (row in 0 until gridSize) {
                         Row(modifier = Modifier.weight(1f)) {
-                            for (col in 0..2) {
-                                val cellIdx = row * 3 + col
-                                val mark = board[cellIdx]
+                            for (col in 0 until gridSize) {
+                                val cellIdx = row * gridSize + col
+                                val mark = board.getOrNull(cellIdx)
 
                                 CellView(
                                     symbol = mark,
                                     index = cellIdx,
+                                    gridSize = gridSize,
                                     modifier = Modifier
                                         .weight(1f)
                                         .fillMaxHeight(),
                                     onClick = { viewModel.makeMove(cellIdx) }
                                 )
 
-                                if (col < 2) {
+                                if (col < gridSize - 1) {
                                     Spacer(
                                         modifier = Modifier
                                             .width(2.dp)
@@ -1009,7 +1092,7 @@ fun GamePlayScreen(viewModel: GameViewModel) {
                                 }
                             }
                         }
-                        if (row < 2) {
+                        if (row < gridSize - 1) {
                             Spacer(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1022,7 +1105,7 @@ fun GamePlayScreen(viewModel: GameViewModel) {
 
                 // Award line generator
                 winningLine?.let { line ->
-                    WinningStrokeLine(winningCombo = line)
+                    WinningStrokeLine(winningCombo = line, gridSize = gridSize)
                 }
             }
 
@@ -1129,7 +1212,7 @@ fun TurnIndicator(currentTurn: String, mySymbol: String, isOnline: Boolean) {
 }
 
 @Composable
-fun CellView(symbol: String?, index: Int, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun CellView(symbol: String?, index: Int, gridSize: Int, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val scale = remember { Animatable(0f) }
 
     LaunchedEffect(symbol) {
@@ -1143,6 +1226,12 @@ fun CellView(symbol: String?, index: Int, modifier: Modifier = Modifier, onClick
         }
     }
 
+    val textSize = when (gridSize) {
+        3 -> 44.sp
+        4 -> 32.sp
+        else -> 20.sp
+    }
+
     Box(
         modifier = modifier
             .testTag("cell_$index")
@@ -1152,7 +1241,7 @@ fun CellView(symbol: String?, index: Int, modifier: Modifier = Modifier, onClick
         if (symbol != null) {
             Text(
                 text = symbol,
-                fontSize = 48.sp,
+                fontSize = textSize,
                 color = if (symbol == "X") NeonCyan else NeonMagenta,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier.scale(scale.value),
@@ -1168,7 +1257,7 @@ fun CellView(symbol: String?, index: Int, modifier: Modifier = Modifier, onClick
 }
 
 @Composable
-fun WinningStrokeLine(winningCombo: List<Int>) {
+fun WinningStrokeLine(winningCombo: List<Int>, gridSize: Int) {
     val drawPercent = remember { Animatable(0f) }
 
     LaunchedEffect(winningCombo) {
@@ -1177,19 +1266,19 @@ fun WinningStrokeLine(winningCombo: List<Int>) {
     }
 
     Canvas(modifier = Modifier.fillMaxSize()) {
-        val cellCount = 3f
+        val cellCount = gridSize.toFloat()
         val itemW = size.width / cellCount
         val itemH = size.height / cellCount
 
         // Resolve coordinates of start and endpoints
-        val firstIndex = winningCombo[0]
-        val lastIndex = winningCombo[2]
+        val firstIndex = winningCombo.first()
+        val lastIndex = winningCombo.last()
 
-        val startX = (firstIndex % 3) * itemW + (itemW / 2)
-        val startY = (firstIndex / 3) * itemH + (itemH / 2)
+        val startX = (firstIndex % gridSize) * itemW + (itemW / 2)
+        val startY = (firstIndex / gridSize) * itemH + (itemH / 2)
 
-        val endX = (lastIndex % 3) * itemW + (itemW / 2)
-        val endY = (lastIndex / 3) * itemH + (itemH / 2)
+        val endX = (lastIndex % gridSize) * itemW + (itemW / 2)
+        val endY = (lastIndex / gridSize) * itemH + (itemH / 2)
 
         // Interpolated points
         val activeX = startX + (endX - startX) * drawPercent.value
@@ -1544,8 +1633,19 @@ fun HistoryItemCard(record: MatchRecord) {
 @Composable
 fun ProfileScreen(viewModel: GameViewModel) {
     val stats by viewModel.profileStats.collectAsState()
-    var editName by remember { mutableStateOf(stats.username) }
     val ctx = LocalContext.current
+
+    val activeTheme = stats?.preferredTheme ?: "CYAN"
+    val themeColors = getThemeColors(activeTheme)
+    val appPrimary = themeColors.first
+    val appSecondary = themeColors.second
+
+    var editName by remember { mutableStateOf("") }
+    LaunchedEffect(stats) {
+        if (stats != null && editName.isEmpty()) {
+            editName = stats!!.username
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -1565,11 +1665,14 @@ fun ProfileScreen(viewModel: GameViewModel) {
                 Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back", tint = PureWhite)
             }
             Text(
-                text = "PROFILE & STATS",
+                text = "NEURAL DECK DASHBOARD",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
                 color = PureWhite,
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.padding(start = 8.dp),
+                style = TextStyle(
+                    shadow = Shadow(color = appPrimary, blurRadius = 10f)
+                )
             )
         }
 
@@ -1577,28 +1680,30 @@ fun ProfileScreen(viewModel: GameViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
-            verticalArrangement = Arrangement.Center
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Profile Card (nickname setter)
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = SlateCard),
-                shape = RoundedCornerShape(20.dp)
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, appPrimary.copy(alpha = 0.2f))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Change Player Name", color = NeonCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Change Cybernetic Alias", color = appPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = editName,
                         onValueChange = {
-                            editName = it.take(15)
+                            editName = it.take(12)
                             viewModel.updateUsername(editName)
                         },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = PureWhite,
                             unfocusedTextColor = PureWhite,
-                            focusedBorderColor = NeonCyan,
+                            focusedBorderColor = appPrimary,
                             unfocusedBorderColor = MutedSlate.copy(alpha = 0.5f),
                             focusedContainerColor = SlateDark,
                             unfocusedContainerColor = SlateDark
@@ -1609,7 +1714,119 @@ fun ProfileScreen(viewModel: GameViewModel) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            // XP LEVEL PROGRESSION CARD
+            val xpCount = stats?.xp ?: 0
+            val lvl = stats?.level ?: 1
+            val relativeXp = xpCount % 300
+            val progressFraction = relativeXp.toFloat() / 300f
+
+            val userRank = when {
+                lvl < 2 -> "GRID RECRUIT"
+                lvl < 3 -> "NEURON TRACER"
+                lvl < 4 -> "SYNAPSE STRATEGIST"
+                lvl < 5 -> "GRID CHIEF RUNNER"
+                else -> "CYBERNETIC DECKMASTER"
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = SlateCard),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, appPrimary.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "LEVEL $lvl PROFILE",
+                            color = appSecondary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                        Text(
+                            text = userRank,
+                            color = appPrimary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(appPrimary.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "XP Progress: $relativeXp / 300 to NEXT LEVEL",
+                        color = MutedSlate,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    // Progress Indicator Bar
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(CircleShape)
+                            .background(SlateDark)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(progressFraction)
+                                .fillMaxHeight()
+                                .clip(CircleShape)
+                                .background(appPrimary)
+                        )
+                    }
+                }
+            }
+
+            // SELECT FACTION THEME CARD
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = SlateCard),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, appPrimary.copy(alpha = 0.2f))
+            ) {
+                Column(modifier = Modifier.padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Customize System Accent Light",
+                        color = appPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.Start)
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf("CYAN", "MAGENTA", "GREEN", "AMBER", "PURPLE").forEach { thName ->
+                            val active = activeTheme == thName
+                            val colors = getThemeColors(thName)
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(colors.first)
+                                    .border(
+                                        BorderStroke(
+                                            if (active) 2.5.dp else 0.dp,
+                                            if (active) PureWhite else Color.Transparent
+                                        ),
+                                        CircleShape
+                                    )
+                                    .clickable { viewModel.updateTheme(thName) }
+                                    .testTag("theme_btn_profile_$thName")
+                            )
+                        }
+                    }
+                }
+            }
 
             // Game Statistics board
             Card(
@@ -1619,8 +1836,8 @@ fun ProfileScreen(viewModel: GameViewModel) {
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        text = "Lifetime Stats Summary",
-                        color = NeonMagenta,
+                        text = "Lifetime Arena Registry",
+                        color = appSecondary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Black,
                         letterSpacing = 1.sp
@@ -1631,9 +1848,9 @@ fun ProfileScreen(viewModel: GameViewModel) {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        ProfileStatBadge(title = "Wins", value = "${stats.wins}", color = NeonCyan, modifier = Modifier.weight(1f))
-                        ProfileStatBadge(title = "Losses", value = "${stats.losses}", color = NeonMagenta, modifier = Modifier.weight(1f))
-                        ProfileStatBadge(title = "Draws", value = "${stats.draws}", color = NeonYellow, modifier = Modifier.weight(1f))
+                        ProfileStatBadge(title = "Wins", value = "${stats?.wins ?: 0}", color = appPrimary, modifier = Modifier.weight(1f))
+                        ProfileStatBadge(title = "Losses", value = "${stats?.losses ?: 0}", color = appSecondary, modifier = Modifier.weight(1f))
+                        ProfileStatBadge(title = "Draws", value = "${stats?.draws ?: 0}", color = NeonYellow, modifier = Modifier.weight(1f))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -1647,25 +1864,42 @@ fun ProfileScreen(viewModel: GameViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Star, contentDescription = null, tint = NeonYellow, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("${stats.currentStreak} Games", color = NeonYellow, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("${stats?.currentStreak ?: 0} Games", color = NeonYellow, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Peak Historic Streak:", color = PureWhite, fontSize = 13.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.ThumbUp, contentDescription = null, tint = appPrimary, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("${stats?.maxStreak ?: 0} Games", color = appPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 }
             }
         }
 
+        Spacer(modifier = Modifier.height(12.dp))
+
         // Clear all button
         Button(
             onClick = {
                 viewModel.clearStats()
-                Toast.makeText(ctx, "Lifetime Stats cleared successfully!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(ctx, "Lifetime Registry completely wiped!", Toast.LENGTH_SHORT).show()
             },
             colors = ButtonDefaults.buttonColors(containerColor = SlateCard),
-            border = BorderStroke(1.dp, NeonMagenta.copy(alpha = 0.4f)),
+            border = BorderStroke(1.dp, appSecondary.copy(alpha = 0.4f)),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth().height(48.dp)
         ) {
-            Text("Clear Lifetime Statistics", color = NeonMagenta, fontWeight = FontWeight.Bold)
+            Text("Clear Lifetime Statistics", color = appSecondary, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -2080,6 +2314,191 @@ fun SumanEpicSplash(onFinished: () -> Unit) {
                     )
                 }
             }
+        }
+    }
+}
+
+// Global cyber theme resolver mapping faction names to glow colors
+@Composable
+fun getThemeColors(themeName: String?): Pair<Color, Color> {
+    return when (themeName?.uppercase() ?: "CYAN") {
+        "CYAN" -> Pair(Color(0xFF00F2FE), Color(0xFFFE0979)) // Neon Cyan, Neon Magenta
+        "MAGENTA" -> Pair(Color(0xFFFE0979), Color(0xFFFFE600)) // Neon Magenta, Neon Yellow
+        "GREEN" -> Pair(Color(0xFF39FF14), Color(0xFF00F2FE)) // Laser Lime, Neon Cyan
+        "AMBER" -> Pair(Color(0xFFFF9F0A), Color(0xFFFFD60A)) // Solar Energy, Intense Yellow
+        "PURPLE" -> Pair(Color(0xFFBF5AF2), Color(0xFFFF2D55)) // Vapor Glow, Hot Pink
+        else -> Pair(Color(0xFF00F2FE), Color(0xFFFE0979))
+    }
+}
+
+@Composable
+fun CyberOnboardingScreen(viewModel: GameViewModel) {
+    var usernameInput by remember { mutableStateOf("") }
+    var selectedTheme by remember { mutableStateOf("CYAN") }
+    val themesList = listOf("CYAN", "MAGENTA", "GREEN", "AMBER", "PURPLE")
+    
+    val currentThemeColors = getThemeColors(selectedTheme)
+    val appPrimary = currentThemeColors.first
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(top = 24.dp)
+        ) {
+            Text(
+                text = "NEURAL HARDWARE SYNC",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = appPrimary,
+                letterSpacing = 4.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "NEON GRID",
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Black,
+                color = PureWhite,
+                fontFamily = FontFamily.Monospace,
+                style = TextStyle(
+                    shadow = Shadow(
+                        color = appPrimary,
+                        blurRadius = 15f
+                    )
+                )
+            )
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .padding(vertical = 16.dp),
+            colors = CardDefaults.cardColors(containerColor = SlateCard),
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, appPrimary.copy(alpha = 0.3f))
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "ENTER CYBERNETIC ALIAS",
+                    color = appPrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+                OutlinedTextField(
+                    value = usernameInput,
+                    onValueChange = { usernameInput = it.take(12) },
+                    placeholder = { Text("e.g. CyberRunner", color = MutedSlate.copy(alpha = 0.5f)) },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = PureWhite,
+                        unfocusedTextColor = PureWhite,
+                        focusedBorderColor = appPrimary,
+                        unfocusedBorderColor = MutedSlate.copy(alpha = 0.4f),
+                        focusedContainerColor = SlateDark,
+                        unfocusedContainerColor = SlateDark
+                    ),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("username_onboard_input")
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "SELECT FACTION LIGHTING",
+                    color = appPrimary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    themesList.forEach { th ->
+                        val colors = getThemeColors(th)
+                        val active = selectedTheme == th
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(colors.first)
+                                .border(
+                                    BorderStroke(
+                                        if (active) 3.dp else 0.dp,
+                                        if (active) PureWhite else Color.Transparent
+                                    ),
+                                    CircleShape
+                                )
+                                .clickable { selectedTheme = th }
+                                .testTag("theme_btn_$th"),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (active) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(12.dp)
+                                        .clip(CircleShape)
+                                        .background(colors.second)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = when (selectedTheme) {
+                        "CYAN" -> "CYBR NEON (Cyan & Magenta Glow)"
+                        "MAGENTA" -> "LASER SHIELD (Magenta & Yellow Glow)"
+                        "GREEN" -> "ATOMIC MATRIX (Lime & Cyan Glow)"
+                        "AMBER" -> "SOLAR CORES (Orange & Amber Glow)"
+                        else -> "VOID SLINGERS (Purple & Pink Glow)"
+                    },
+                    color = MutedSlate,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        val isValid = usernameInput.trim().length >= 3
+        Button(
+            onClick = {
+                if (isValid) {
+                    viewModel.completeOnboarding(usernameInput, selectedTheme)
+                }
+            },
+            enabled = isValid,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isValid) appPrimary else MutedSlate.copy(alpha = 0.3f)
+            ),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .testTag("submit_onboard_btn")
+        ) {
+            Text(
+                text = "INITIALIZE COGNITIVE CONNECTION",
+                color = if (isValid) PureWhite else MutedSlate,
+                fontWeight = FontWeight.Black,
+                fontSize = 12.sp,
+                letterSpacing = 1.sp
+            )
         }
     }
 }

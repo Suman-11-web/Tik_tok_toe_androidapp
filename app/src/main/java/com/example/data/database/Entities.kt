@@ -21,5 +21,10 @@ data class ProfileStats(
     val wins: Int = 0,
     val losses: Int = 0,
     val draws: Int = 0,
-    val currentStreak: Int = 0
+    val currentStreak: Int = 0,
+    val maxStreak: Int = 0,
+    val xp: Int = 0,
+    val level: Int = 1,
+    val preferredTheme: String = "CYAN", // CYAN, MAGENTA, GREEN, AMBER, PURPLE
+    val hasCompletedOnboarding: Boolean = false
 )

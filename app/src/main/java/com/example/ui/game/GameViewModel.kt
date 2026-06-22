@@ -49,6 +49,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _gameMode = MutableStateFlow(GameMode.LOCAL)
     val gameMode: StateFlow<GameMode> = _gameMode.asStateFlow()
 
+    private val _gridSize = MutableStateFlow(3) // 3, 4, 6
+    val gridSize: StateFlow<Int> = _gridSize.asStateFlow()
+
     // Tic-Tac-Toe Game State
     private val _board = MutableStateFlow<List<String?>>(List(9) { null })
     val board: StateFlow<List<String?>> = _board.asStateFlow()
@@ -109,7 +112,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             dao.getProfileStats().collectLatest { stats ->
                 if (stats == null) {
-                    dao.updateProfileStats(ProfileStats())
+                    dao.updateProfileStats(ProfileStats(
+                        username = "",
+                        hasCompletedOnboarding = false
+                    ))
                 }
             }
         }
@@ -132,7 +138,32 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun updateUsername(newName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val current = profileStats.value
-            dao.updateProfileStats(current.copy(username = newName.take(15)))
+            dao.updateProfileStats(current.copy(username = newName.trim().take(12)))
+        }
+    }
+
+    fun completeOnboarding(username: String, theme: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val current = profileStats.value
+            dao.updateProfileStats(current.copy(
+                username = username.trim().take(12),
+                preferredTheme = theme,
+                hasCompletedOnboarding = true
+            ))
+        }
+    }
+
+    fun updateTheme(newTheme: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val current = profileStats.value
+            dao.updateProfileStats(current.copy(preferredTheme = newTheme))
+        }
+    }
+
+    fun updateGridSize(size: Int) {
+        if (size in listOf(3, 4, 6)) {
+            _gridSize.value = size
+            startNewGame()
         }
     }
 
@@ -276,7 +307,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startNewGame(runSync: Boolean = true) {
-        _board.value = List(9) { null }
+        _board.value = List(_gridSize.value * _gridSize.value) { null }
         _currentTurn.value = "X"
         _winningLine.value = null
         _gameResult.value = null
@@ -286,12 +317,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (runSync && _gameMode.value == GameMode.ONLINE) {
             mqttManager?.sendMessage("RESET") {
                 put("reset", true)
+                put("gridSize", _gridSize.value)
             }
         }
     }
 
     // Try cell moves
     fun makeMove(cellIndex: Int) {
+        val totalCells = _gridSize.value * _gridSize.value
+        if (cellIndex < 0 || cellIndex >= totalCells) return
         if (_board.value[cellIndex] != null || _gameResult.value != null) return
 
         val symbolActive = _currentTurn.value
@@ -315,6 +349,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             mqttManager?.sendMessage("MOVE") {
                 put("cellIndex", cellIndex)
                 put("symbol", symbolActive)
+                put("gridSize", _gridSize.value)
             }
         }
 
@@ -327,8 +362,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         if (_gameMode.value == GameMode.VS_AI && nextSymbol == "O") {
             viewModelScope.launch {
-                delay((400..800).random().toLong()) // Dynamic delay to simulate thinking!
-                makeAiOptimalMove()
+                delay((300..700).random().toLong()) // Dynamic delay to simulate thinking!
+                if (_gridSize.value == 3) {
+                    makeAiOptimalMove()
+                } else {
+                    makeAiHeuristicMove()
+                }
             }
         }
     }
@@ -341,6 +380,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     // Host periodically announces room. If we are waiting, register host details
                     if (_gameMode.value == GameMode.ONLINE && _mySymbol.value == "O" && _appState.value == AppState.LOBBY_WAIT) {
                         _opponentName.value = data.optString("hostName", "Host")
+                        val hSize = data.optInt("gridSize", 3)
+                        if (hSize in listOf(3, 4, 6) && hSize != _gridSize.value) {
+                            _gridSize.value = hSize
+                            _board.value = List(hSize * hSize) { null }
+                        }
                     }
                 }
                 "JOIN" -> {
@@ -351,9 +395,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         
                         _opponentName.value = joineeName
                         
-                        // Affirm back to Joinee with our Host username
+                        // Affirm back to Joinee with our Host username and grid size
                         mqttManager?.sendMessage("AFFIRM") {
                             put("hostName", profileStats.value.username)
+                            put("gridSize", _gridSize.value)
                         }
                         
                         if (isNewMatch) {
@@ -367,6 +412,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     // Receiver receives host's nickname affirmation
                     if (_gameMode.value == GameMode.ONLINE && _mySymbol.value == "O") {
                         val hostName = data.optString("hostName", "Opponent")
+                        val hSize = data.optInt("gridSize", 3)
+                        if (hSize in listOf(3, 4, 6) && hSize != _gridSize.value) {
+                            _gridSize.value = hSize
+                            _board.value = List(hSize * hSize) { null }
+                        }
                         if (_opponentName.value == "Connecting..." || _opponentName.value == "Opponent" || _opponentName.value == "Searching...") {
                             _opponentName.value = hostName
                             SoundSynth.playVictory()
@@ -378,8 +428,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 "MOVE" -> {
                     val cellIndex = data.optInt("cellIndex", -1)
                     val symbolObj = data.optString("symbol", "")
+                    val hSize = data.optInt("gridSize", _gridSize.value)
+
+                    if (hSize in listOf(3, 4, 6) && hSize != _gridSize.value) {
+                        _gridSize.value = hSize
+                        _board.value = List(hSize * hSize) { null }
+                    }
                     
-                    if (cellIndex in 0..8 && symbolObj == _currentTurn.value) {
+                    val cellLimit = _gridSize.value * _gridSize.value
+                    if (cellIndex in 0 until cellLimit && symbolObj == _currentTurn.value) {
                         if (_board.value[cellIndex] == null && _gameResult.value == null) {
                             val updatedBoard = _board.value.toMutableList()
                             updatedBoard[cellIndex] = symbolObj
@@ -405,6 +462,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
                 "RESET" -> {
+                    val hSize = data.optInt("gridSize", _gridSize.value)
+                    if (hSize in listOf(3, 4, 6)) {
+                        _gridSize.value = hSize
+                    }
                     startNewGame(runSync = false)
                 }
                 "REMATCH" -> {
@@ -452,24 +513,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // Game evaluation
     private fun evaluateGame(boardState: List<String?>, activeSymbol: String): Boolean {
-        val winningCombos = listOf(
-            listOf(0, 1, 2), listOf(3, 4, 5), listOf(6, 7, 8), // Rows
-            listOf(0, 3, 6), listOf(1, 4, 7), listOf(2, 5, 8), // Columns
-            listOf(0, 4, 8), listOf(2, 4, 6)                  // Diagonals
-        )
-
-        for (combo in winningCombos) {
-            if (boardState[combo[0]] == activeSymbol &&
-                boardState[combo[1]] == activeSymbol &&
-                boardState[combo[2]] == activeSymbol
-            ) {
-                _winningLine.value = combo
-                _gameResult.value = if (activeSymbol == "X") "WIN_X" else "WIN_O"
-                
-                // Track stats based on game outcomes
-                persistStats(activeSymbol)
-                return true
-            }
+        val size = _gridSize.value
+        val combo = findWinningLine(boardState, size)
+        if (combo != null) {
+            _winningLine.value = combo
+            _gameResult.value = if (activeSymbol == "X") "WIN_X" else "WIN_O"
+            
+            // Track stats based on game outcomes
+            persistStats(activeSymbol)
+            return true
         }
 
         if (boardState.none { it == null }) {
@@ -479,6 +531,108 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         return false
+    }
+
+    private fun findWinningLine(boardState: List<String?>, size: Int): List<Int>? {
+        val winLen = if (size == 3) 3 else 4
+        
+        fun checkCombo(combo: List<Int>): List<Int>? {
+            if (combo.size < winLen) return null
+            var currentSymbol: String? = null
+            var count = 0
+            val currentLine = mutableListOf<Int>()
+            
+            for (idx in combo) {
+                val symbol = boardState.getOrNull(idx)
+                if (symbol != null) {
+                    if (symbol == currentSymbol) {
+                        count++
+                        currentLine.add(idx)
+                    } else {
+                        currentSymbol = symbol
+                        count = 1
+                        currentLine.clear()
+                        currentLine.add(idx)
+                    }
+                    if (count == winLen) {
+                        return currentLine.toList()
+                    }
+                } else {
+                    currentSymbol = null
+                    count = 0
+                    currentLine.clear()
+                }
+            }
+            return null
+        }
+
+        // 1. Rows
+        for (r in 0 until size) {
+            val rowIndices = (0 until size).map { c -> r * size + c }
+            val win = checkCombo(rowIndices)
+            if (win != null) return win
+        }
+        
+        // 2. Columns
+        for (c in 0 until size) {
+            val colIndices = (0 until size).map { r -> r * size + c }
+            val win = checkCombo(colIndices)
+            if (win != null) return win
+        }
+
+        // 3. Diagonals (top-left to bottom-right)
+        for (col in 0..size - winLen) {
+            val diag = mutableListOf<Int>()
+            var r = 0
+            var c = col
+            while (r < size && c < size) {
+                diag.add(r * size + c)
+                r++
+                c++
+            }
+            val win = checkCombo(diag)
+            if (win != null) return win
+        }
+        for (row in 1..size - winLen) {
+            val diag = mutableListOf<Int>()
+            var r = row
+            var c = 0
+            while (r < size && c < size) {
+                diag.add(r * size + c)
+                r++
+                c++
+            }
+            val win = checkCombo(diag)
+            if (win != null) return win
+        }
+
+        // 4. Diagonals (top-right to bottom-left)
+        for (col in winLen - 1 until size) {
+            val diag = mutableListOf<Int>()
+            var r = 0
+            var c = col
+            while (r < size && c >= 0) {
+                diag.add(r * size + c)
+                r++
+                c--
+            }
+            val win = checkCombo(diag)
+            if (win != null) return win
+        }
+        for (row in 1..size - winLen) {
+            val diag = mutableListOf<Int>()
+            var r = row
+            var c = size - 1
+            while (r < size && c >= 0) {
+                diag.add(r * size + c)
+                r++
+                c--
+            }
+            val win = checkCombo(diag)
+            if (win != null) return win
+        }
+
+        return null
     }
 
     private fun persistStats(resultSymbol: String) {
@@ -513,21 +667,108 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             dao.insertMatch(record)
             
             val current = profileStats.value
+            val addedXp = when (outcomeStr) {
+                "WIN" -> 100
+                "DRAW" -> 40
+                else -> 20
+            }
+            val newXp = current.xp + addedXp
+            val newLevel = (newXp / 300) + 1
+            
+            val activeStreak = if (outcomeStr == "WIN") current.currentStreak + 1 else if (outcomeStr == "LOSS") 0 else current.currentStreak
+            val activeMaxStreak = maxOf(current.maxStreak, activeStreak)
+
             val updateStats = when (outcomeStr) {
                 "WIN" -> current.copy(
                     wins = current.wins + 1,
-                    currentStreak = current.currentStreak + 1
+                    currentStreak = activeStreak,
+                    maxStreak = activeMaxStreak,
+                    xp = newXp,
+                    level = newLevel
                 )
                 "LOSS" -> current.copy(
                     losses = current.losses + 1,
-                    currentStreak = 0
+                    currentStreak = 0,
+                    xp = newXp,
+                    level = newLevel
                 )
                 else -> current.copy(
-                    draws = current.draws + 1
+                    draws = current.draws + 1,
+                    xp = newXp,
+                    level = newLevel
                 )
             }
             dao.updateProfileStats(updateStats)
         }
+    }
+
+    // Smart Heuristic AI for 4x4 and 6x6
+    private fun makeAiHeuristicMove() {
+        val size = _gridSize.value
+        val currentBoard = _board.value
+        if (_gameResult.value != null) return
+
+        val mySym = "O"
+        val oppSym = "X"
+
+        // 1. Can AI Win right now? Check if placing O in an empty slot wins the game.
+        for (i in currentBoard.indices) {
+            if (currentBoard[i] == null) {
+                val tempBoard = currentBoard.toMutableList()
+                tempBoard[i] = mySym
+                if (findWinningLine(tempBoard, size) != null) {
+                    makeMove(i)
+                    return
+                }
+            }
+        }
+
+        // 2. Can AI block opponent? Check if opponent plays in an empty slot, they win. If so, block them!
+        for (i in currentBoard.indices) {
+            if (currentBoard[i] == null) {
+                val tempBoard = currentBoard.toMutableList()
+                tempBoard[i] = oppSym
+                if (findWinningLine(tempBoard, size) != null) {
+                    makeMove(i)
+                    return
+                }
+            }
+        }
+
+        // 3. Strategy/Tactical Moves
+        val emptyIndices = currentBoard.indices.filter { currentBoard[it] == null }
+        if (emptyIndices.isEmpty()) return
+
+        // Prefer center squares to establish high-threat anchors
+        val centerRange = if (size == 4) listOf(5, 6, 9, 10) else if (size == 6) listOf(14, 15, 20, 21) else emptyList()
+        val emptyCenter = centerRange.filter { currentBoard[it] == null }
+        if (emptyCenter.isNotEmpty()) {
+            makeMove(emptyCenter.random())
+            return
+        }
+
+        // Cluster and support existing AI O-symbols
+        for (idx in emptyIndices) {
+            val row = idx / size
+            val col = idx % size
+            for (dr in -1..1) {
+                for (dc in -1..1) {
+                    if (dr == 0 && dc == 0) continue
+                    val nr = row + dr
+                    val nc = col + dc
+                    if (nr in 0 until size && nc in 0 until size) {
+                        val nIdx = nr * size + nc
+                        if (currentBoard[nIdx] == mySym) {
+                            makeMove(idx)
+                            return
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fallback: Smart fallback to random empty slot
+        makeMove(emptyIndices.random())
     }
 
     // AI Minimax Player
